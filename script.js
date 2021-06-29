@@ -10,7 +10,6 @@ let fileContent = "";
  * @param {String[]} suggestions Array of Strings: Suggestions for the Errors
  */
 const renderSuggestions = (badWords, suggestions) => {
-    console.log(badWords, suggestions);
     const tips = [];
     badWords.map((word, index) => {
         let html = "";
@@ -148,6 +147,7 @@ const makeAPICall = async (fileData) => {
 */
 $(".file").change(function (e) {
     e.preventDefault();
+    fileContent = "";
 
     const file = this.files[0];
     reader.onload = function () {
@@ -180,6 +180,7 @@ dropArea.addEventListener("dragover", function (e) {
 dropArea.addEventListener("drop", function (e) {
     e.stopPropagation();
     e.preventDefault();
+    fileContent = "";
 
     setTimeout(() => {
         dropArea.style.backgroundColor = "#817b7b";

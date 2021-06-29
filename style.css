@@ -1,0 +1,121 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    background-color: #ecebeb;
+}
+
+.container {
+    width: 70%;
+}
+
+.droparea {
+    background-color: #817b7b;
+    margin-top: 30px;
+    text-align: center;
+}
+
+.droparea label {
+    background: linear-gradient(40deg, #41dd82, #3c995b);
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.droparea input[type="file"] {
+    opacity: 0;
+    width: 0.1px;
+    height: 0.1px;
+}
+
+.wow {
+    /* margin: 1rem auto; */
+    background-color: rgb(240, 240, 192);
+    font-family: "Courier New", Courier, monospace;
+    text-align: justify;
+    font-size: large;
+}
+
+/* //////////// Display Red Underline /////////////// */
+
+.mark {
+    display: inline-block;
+    position: relative;
+    padding: 2px;
+    background: linear-gradient(
+        to right,
+        rgb(211, 109, 109),
+        rgb(212, 119, 119)
+    );
+    background-size: 0% 3px;
+    background-repeat: no-repeat;
+    background-position: left bottom;
+    animation: underline 2s ease-in-out;
+    animation-fill-mode: forwards;
+}
+
+@keyframes underline {
+    to {
+        background-size: 100% 3px;
+    }
+}
+
+.mark:hover {
+    background: linear-gradient(to right, red, red);
+    background-size: 0% 3px;
+    background-repeat: no-repeat;
+    background-position: left bottom;
+}
+
+/* 
+    ////////////// Tooltip Suggestion ////////////////
+*/
+
+/* .maintext .tiptext { */
+.tiptext {
+    /* visibility: hidden; */
+
+    width: 200px;
+    background-color: #fff;
+    color: #0d7200;
+    text-align: center;
+    font-weight: bold;
+    /* border: 2px solid #fff; */
+    border-radius: 16px;
+    padding: 5px 0;
+    box-shadow: 3px 3px 10px 2px #e4e2e2;
+
+    /* Position the maintext */
+    position: absolute;
+    z-index: 1;
+    top: 140%;
+    left: 125%;
+    margin-left: -60px;
+    overflow: hidden;
+}
+
+.hidden {
+    display: none;
+}
+
+ul {
+    list-style: none;
+    margin: 0 0 5px;
+    text-align: left;
+}
+
+span div {
+    display: inline;
+    position: relative;
+}
+
+.message {
+    font-family: "Courier New", Courier, monospace;
+    background-color: rgb(85, 202, 81);
+}
+
+footer {
+    position: inherit;
+    margin: 10px auto;
+}

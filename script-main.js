@@ -1,5 +1,5 @@
 /* 
-    Works for single small paragraph: v1
+    Main Working Source Code
 */
 const dropArea = document.querySelector(".droparea");
 
@@ -12,20 +12,38 @@ let fileContent = "";
  * @param {String[]} badWords Array of String: Errors in content
  * @param {String[]} suggestions Array of Strings: Suggestions for the Errors
  */
-const renderSuggestions = (badWords, suggestions) => {
+const renderSuggestions = (errWords, errSuggestions) => {
+    // console.log(errWords, errSuggestions);
+
+    const badWords = []; // unique badWords
+    const suggestions = []; // undeue suggestions
+
+    errWords.forEach((word, index) => {
+        if (errWords.indexOf(word) === index) {
+            badWords.push(word);
+            suggestions.push(errSuggestions[index]);
+        }
+    });
+
     const tips = [];
-    badWords.map((word, index) => {
+
+    // Create tip list content
+    badWords.map((_, index) => {
         let html = "";
         if (suggestions[index].length > 0) {
             html = "<ul>";
+
             suggestions[index].forEach((word) => {
                 html += `<li>${word}</li>`;
             });
+
             html += `<li style="color: #8c0000" class="ignore">ignore</li></ul>`;
-            tips.push(html);
+
+            tips.push(html); // add to tips array
         } else {
             html += `<ul><li style="color: #8c0000" class="ignore">no suggestion found</li></ul>`;
-            tips.push(html);
+
+            tips.push(html); // add to tips array
         }
     });
 
@@ -34,7 +52,9 @@ const renderSuggestions = (badWords, suggestions) => {
 
     errorWords.forEach((word, i) => {
         const suggestionBox = word.closest("div").querySelector(".tiptext");
-        suggestionBox.innerHTML = tips[i];
+        const index = badWords.indexOf(word.textContent);
+
+        suggestionBox.innerHTML = tips[index];
 
         allBoxes.push(suggestionBox);
 
@@ -92,10 +112,10 @@ const renderSuggestions = (badWords, suggestions) => {
  * @param {String[]} badWords Array of String: Errors in content
  * @param {String} renderData File Data
  */
-const renderErrors = (badWords, renderData) => {
+const renderErrors = (errWords, renderData) => {
     const errorMark = [];
     let html = "";
-    badWords = [...new Set(badWords)];
+    const badWords = [...new Set(errWords)];
 
     badWords.forEach((word, index) => {
         html = `<span>
@@ -105,46 +125,32 @@ const renderErrors = (badWords, renderData) => {
                     </span>
                 </div>
             </span>`;
-        const str = badWords[index].replace(badWords[index], html);
+        const str = word.replace(word, html);
         errorMark.push(str);
     });
 
-    const render = renderData
-        .replaceAll("<br>", " ")
-        .split(" ")
-        .filter((word) => word);
+    const nested = renderData
+        .split("<br><br>")
+        .filter((word) => word)
+        .map((line) => line.split(" "));
 
-    // console.log(render, badWords);
-
-    render.forEach((word, index) => {
-        for (let i = 0; i < badWords.length; i++) {
-            const w = badWords[i];
-            const found = word.match(new RegExp(`\\b${w}\\b`));
-            if (found) {
-                render.splice(index, 1, errorMark[i]); // OR
-                // render[index] =
-                //     render[index].replace(word, errorMark[i]) +
-                //     render[index].slice(word.length); // OR
-                // word = word.replace(word, errorMark[i]);
-                // render[index] = word;
-                break;
+    nested.map((render) => {
+        render.forEach((word, index) => {
+            for (let i = 0; i < badWords.length; i++) {
+                const w = badWords[i];
+                const found = word.match(new RegExp(`\\b${w}\\b`));
+                if (found) {
+                    render.splice(index, 1, errorMark[i]); // OR
+                    break;
+                }
             }
-        }
+        });
     });
 
-    // console.log(render);
-
-    renderData = render.join(" ");
+    renderData = nested.map((el) => el.join(" ").concat("<br><br>")).join("");
 
     $("main").html(renderData);
 };
-
-/**
- * Accepts File contents as String and filters out the unnecessary symbols prepares the string for display
- * @param {String} data File Content as String
- * @returns String
- */
-const formatString = (data) => data.replaceAll(/[\n\r]/g, "<br>");
 
 const getJSON = async (data) => {
     let scanText = data.replaceAll(/[\n\r]/g, " ");
@@ -158,31 +164,44 @@ const getJSON = async (data) => {
  * Receives File Content as String and Performs the API call to check the Errors in content. After API call, it receives the suggestions for those error words. In case of error it renders Error Statement on page
  * @param {String} readData File Content as String
  */
-const makeAPICall = async (fileData) => {
-    try {
-        let renderData = formatString(fileData);
-        // let scanText = paragraph.replaceAll(/[\n\r]/g, " ");
-        $("main").html(fileData);
+const makeAPICall = (fileData) => {
+    const paragraphs = fileData
+        .split("\n")
+        .filter((para) => para !== "\r" && para !== "");
 
-        // const URL = `https://api.textgears.com/spelling?text=${scanText}&language=en-GB&key=${APIKEY}`;
+    let renderData = "";
+    let res;
+    const badWords = [];
+    const suggestions = [];
 
-        // const res = await (await fetch(URL)).json();
-        const res = await getJSON(fileData);
-        const words = res.response.errors;
-        const badWords = [];
-        const suggestions = [];
+    paragraphs.forEach((paragraph, i) => {
+        renderData += paragraph + "<br><br>";
+        $("main").html(renderData);
+        getJSON(paragraph)
+            .then((res) => {
+                const words = res.response.errors;
+                addToArray(words);
+            })
+            .catch((err) => {
+                $("main").html(
+                    "<h3 style='color: red'>Something Went Wrong!</h3>"
+                );
+                console.log(err);
+            });
 
-        words.forEach((word) => {
-            badWords.push(word.bad);
-            suggestions.push(word.better);
-        });
-
-        renderErrors(badWords, renderData);
-        renderSuggestions(badWords, suggestions);
-    } catch (err) {
-        $("main").html("<h3 style='color: red'>Something Went Wrong!</h3>");
-        console.log(err);
-    }
+        const addToArray = (words) => {
+            words.forEach((word) => {
+                badWords.push(word.bad);
+                suggestions.push(word.better);
+            });
+            if (i === paragraphs.length - 1) {
+                setTimeout(() => {
+                    renderErrors(badWords, renderData);
+                    renderSuggestions(badWords, suggestions);
+                }, 1500);
+            }
+        };
+    });
 };
 
 /* 
@@ -249,13 +268,3 @@ dropArea.addEventListener("drop", function (e) {
     };
     reader.readAsText(file);
 });
-
-/* 
-    console.log(e.target);
-    console.log(dropArea.parentNode);
-    console.log(dropArea.childNodes);
-    dropArea == this
-    e.target: Where you clicked / touched
-*/
-
-// !?"

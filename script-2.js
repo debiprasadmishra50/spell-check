@@ -89,10 +89,13 @@ const renderSuggestions = (badWords, suggestions) => {
  * @param {String[]} badWords Array of String: Errors in content
  * @param {String} renderData File Data
  */
-const renderErrors = (badWords, renderData) => {
+const renderErrors = (errWords, renderData) => {
+    console.log("Main", errWords);
     const errorMark = [];
     let html = "";
-    badWords = [...new Set(badWords)];
+    // const badWords = [...new Set(errWords)];
+    const badWords = [...errWords];
+    console.log("Single", badWords);
 
     badWords.forEach((word, index) => {
         html = `<span>
@@ -102,6 +105,7 @@ const renderErrors = (badWords, renderData) => {
                     </span>
                 </div>
             </span>`;
+        console.log(badWords[index], word);
         const str = badWords[index].replace(badWords[index], html);
         errorMark.push(str);
     });
@@ -136,13 +140,6 @@ const renderErrors = (badWords, renderData) => {
     $("main").html(renderData);
 };
 
-/**
- * Accepts File contents as String and filters out the unnecessary symbols prepares the string for display
- * @param {String} data File Content as String
- * @returns String
- */
-const formatString = (data) => data.replaceAll(/[\n\r]/g, "<br>");
-
 const getJSON = async (data) => {
     let scanText = data.replaceAll(/[\n\r]/g, " ");
 
@@ -155,31 +152,40 @@ const getJSON = async (data) => {
  * Receives File Content as String and Performs the API call to check the Errors in content. After API call, it receives the suggestions for those error words. In case of error it renders Error Statement on page
  * @param {String} readData File Content as String
  */
-const makeAPICall = async (fileData) => {
-    try {
-        let renderData = formatString(fileData);
-        // let scanText = paragraph.replaceAll(/[\n\r]/g, " ");
-        $("main").html(fileData);
+const makeAPICall = (fileData) => {
+    const paragraphs = fileData
+        .split("\n")
+        .filter((para) => para !== "\r" && para !== "");
+    console.log(paragraphs);
 
-        // const URL = `https://api.textgears.com/spelling?text=${scanText}&language=en-GB&key=${APIKEY}`;
+    let renderData;
+    let res;
+    const badWords = [];
+    const suggestions = [];
 
-        // const res = await (await fetch(URL)).json();
-        const res = await getJSON(fileData);
+    paragraphs.forEach(async (paragraph) => {
+        renderData += paragraph + " ";
+
+        try {
+            res = await getJSON(paragraph);
+        } catch (err) {
+            $("main").html("<h3 style='color: red'>Something Went Wrong!</h3>");
+            console.log(err);
+        }
+
         const words = res.response.errors;
-        const badWords = [];
-        const suggestions = [];
 
         words.forEach((word) => {
             badWords.push(word.bad);
             suggestions.push(word.better);
         });
+        console.log("foreach");
+    });
+    console.log("outside");
+    renderErrors(badWords, renderData);
+    renderSuggestions(badWords, suggestions);
 
-        renderErrors(badWords, renderData);
-        renderSuggestions(badWords, suggestions);
-    } catch (err) {
-        $("main").html("<h3 style='color: red'>Something Went Wrong!</h3>");
-        console.log(err);
-    }
+    console.log(badWords, suggestions);
 };
 
 /* 

@@ -1,4 +1,4 @@
-This is a tesing documet.
+This is a tesing documet new documet. and documet
 
 It is a new dta
 
@@ -10,11 +10,11 @@ THe man is on the roof.
 It Sets the knd of text decotion to use new fod.
 
 
+method extrats parts of a strig and returns the extacted parts in a new tring. Use the sart and
 
 
 
-
-
+documet new documet. and documet
 
 
 

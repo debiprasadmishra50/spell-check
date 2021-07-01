@@ -8,11 +8,172 @@ const APIKEY = "kTcMLyWHun68kPn4"; // https://textgears.com
 const reader = new FileReader();
 let fileContent = "";
 
-const newfunction = async (badWords, suggestions) => {
-    // console.log(suggestions);
-    console.log("NEWFUNC");
-    console.log(await badWords);
-    console.log([...new Set(await badWords)]);
+/**
+ * Receives array of Wrong words and suggestions for those words and renders suggestion and perform the event handling
+ * @param {String[]} badWords Array of String: Errors in content
+ * @param {String[]} suggestions Array of Strings: Suggestions for the Errors
+ */
+const renderSuggestions = (errWords, errSuggestions) => {
+    // console.log(errWords, errSuggestions);
+
+    const badWords = []; // unique badWords
+    const suggestions = []; // undeue suggestions
+
+    errWords.forEach((word, index) => {
+        if (errWords.indexOf(word) === index) {
+            badWords.push(word);
+            suggestions.push(errSuggestions[index]);
+        }
+    });
+
+    // console.log(badWords, suggestions);
+
+    const tips = [];
+
+    // Create tip list content
+    badWords.map((_, index) => {
+        let html = "";
+        if (suggestions[index].length > 0) {
+            html = "<ul>";
+
+            suggestions[index].forEach((word) => {
+                html += `<li>${word}</li>`;
+            });
+
+            html += `<li style="color: #8c0000" class="ignore">ignore</li></ul>`;
+
+            tips.push(html); // add to tips array
+        } else {
+            html += `<ul><li style="color: #8c0000" class="ignore">no suggestion found</li></ul>`;
+
+            tips.push(html); // add to tips array
+        }
+    });
+
+    const errorWords = document.querySelectorAll(".mark");
+    const allBoxes = [];
+    // console.log(tips);
+
+    errorWords.forEach((word, i) => {
+        const suggestionBox = word.closest("div").querySelector(".tiptext");
+        // console.log(word.textContent);
+        const index = badWords.indexOf(word.textContent);
+        // const suggestion = suggestions[index];
+
+        // console.log(wrongWord, index, suggestion);
+
+        suggestionBox.innerHTML = tips[index];
+
+        allBoxes.push(suggestionBox);
+
+        $(word).click(function (e) {
+            e.preventDefault();
+            if ($(suggestionBox).hasClass("hidden")) {
+                $(".tiptext").addClass("hidden");
+                $(suggestionBox).removeClass("hidden");
+            } else {
+                $(suggestionBox).addClass("hidden");
+            }
+        });
+    });
+
+    allBoxes.map((box, index) => {
+        const lists = box.querySelectorAll("li");
+        lists.forEach((list, i) => {
+            if (i === lists.length - 1) {
+                $(list).hover(
+                    () =>
+                        $(list).css(
+                            "text-decoration",
+                            "underline #fb9300 solid"
+                        ),
+                    () => $(list).css("text-decoration", "none")
+                );
+
+                $(list).click(function (e) {
+                    e.preventDefault();
+                    errorWords[index].classList.remove("mark");
+                    $(box).addClass("hidden");
+                });
+            } else {
+                $(list).hover(
+                    () =>
+                        $(list).css(
+                            "text-decoration",
+                            "underline #68eb63 solid"
+                        ),
+                    () => $(list).css("text-decoration", "none")
+                );
+                $(list).click(function (e) {
+                    e.preventDefault();
+                    errorWords[index].textContent = list.textContent;
+                    errorWords[index].classList.remove("mark");
+                    $(box).addClass("hidden");
+                });
+            }
+        });
+    });
+};
+
+/**
+ * Receives array of Wrong words and suggestions for those words and renders the file content on Page
+ * @param {String[]} badWords Array of String: Errors in content
+ * @param {String} renderData File Data
+ */
+const renderErrors = (errWords, renderData) => {
+    const errorMark = [];
+    let html = "";
+    const badWords = [...new Set(errWords)];
+    // console.log("Single", badWords);
+
+    badWords.forEach((word, index) => {
+        html = `<span>
+                <div>
+                    <span class="mark">${word}</span>
+                    <span class="tiptext hidden">
+                    </span>
+                </div>
+            </span>`;
+        const str = word.replace(word, html);
+        errorMark.push(str);
+    });
+
+    const nested = renderData
+        .split("<br><br>")
+        .filter((word) => word)
+        // .map((line) => line.replace(/\r/g, ""))
+        .map((line) => line.split(" "));
+
+    // console.log(renderData, nested, badWords);
+
+    nested.map((render) => {
+        render.forEach((word, index) => {
+            for (let i = 0; i < badWords.length; i++) {
+                const w = badWords[i];
+                const found = word.match(new RegExp(`\\b${w}\\b`));
+                if (found) {
+                    render.splice(index, 1, errorMark[i]); // OR
+                    // render[index] =
+                    //     render[index].replace(word, errorMark[i]) +
+                    //     render[index].slice(word.length); // OR
+                    // word = word.replace(word, errorMark[i]);
+                    // render[index] = word;
+                    break;
+                }
+            }
+        });
+    });
+
+    // document.body.insertAdjacentHTML(
+    //     "afterend",
+    //     nested.map((el) => el.join(" ")).join("")
+    // );
+    // console.log(render);
+
+    // renderData = render.join(" ");
+    renderData = nested.map((el) => el.join(" ").concat("<br><br>")).join("");
+
+    $("main").html(renderData);
 };
 
 const getJSON = async (data) => {
@@ -31,30 +192,40 @@ const makeAPICall = (fileData) => {
     const paragraphs = fileData
         .split("\n")
         .filter((para) => para !== "\r" && para !== "");
-    console.log(paragraphs.length);
+
+    let renderData = "";
     let res;
     const badWords = [];
     const suggestions = [];
 
     paragraphs.forEach((paragraph, i) => {
-        // console.log(paragraph);
+        renderData += paragraph + "<br><br>";
+        $("main").html(renderData);
 
         (async () => {
-            // console.log(i);
-            const res = await getJSON(paragraph);
-            const words = res.response.errors;
+            try {
+                const res = await getJSON(paragraph);
+                const words = res.response.errors;
 
-            words.forEach((word) => {
-                // console.log(word.bad);
-                badWords.push(word.bad);
-                suggestions.push(word.better);
-            });
+                words.forEach((word) => {
+                    badWords.push(word.bad);
+                    suggestions.push(word.better);
+                });
 
-            if (i === paragraphs.length - 1) newfunction(badWords, suggestions);
+                if (i === paragraphs.length - 1) {
+                    setTimeout(() => {
+                        renderErrors(badWords, renderData);
+                        renderSuggestions(badWords, suggestions);
+                    }, 1000);
+                }
+            } catch (err) {
+                $("main").html(
+                    "<h3 style='color: red'>Something Went Wrong!</h3>"
+                );
+                console.log(err);
+            }
         })();
     });
-
-    // console.log(badWords);
 };
 
 /* 
